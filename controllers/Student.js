@@ -3,10 +3,29 @@ import User from "../models/UserModel.js";
 import { Op } from "sequelize";
 
 export const getStudents = async (req, res) => {
+  const page = parseInt(req.query.page) || 0;
+  const limit = parseInt(req.query.limit) || 10;
+  const search = req.query.search_query || "";
+  const offset = limit * page;
+
+  let response;
+  let totalPage;
+  let totalRows;
+
+  let whereCondition = {
+    name: {
+      [Op.like]: "%" + search + "%",
+    },
+  };
+
   try {
-    let response;
     if (req.role === "admin") {
+      totalRows = await Student.count({ where: { [Op.or]: [whereCondition] } });
+      totalPage = Math.ceil(totalRows / limit);
       response = await Student.findAll({
+        where: { [Op.or]: [whereCondition] },
+        offset: offset,
+        limit: limit,
         attributes: ["uuid", "name", "gender", "id"],
         include: [
           {
@@ -16,9 +35,16 @@ export const getStudents = async (req, res) => {
         ],
       });
     } else {
+      totalRows = await Student.count({
+        where: { [Op.or]: [whereCondition], userId: req.userId },
+      });
+      totalPage = Math.ceil(totalRows / limit);
       response = await Student.findAll({
         attributes: ["uuid", "name", "gender"],
+        offset: offset,
+        limit: limit,
         where: {
+          [Op.or]: [whereCondition],
           userId: req.userId,
         },
         include: [
@@ -29,7 +55,13 @@ export const getStudents = async (req, res) => {
         ],
       });
     }
-    res.status(200).json(response);
+    res.status(200).json({
+      result: response,
+      page: page,
+      limit: limit,
+      totalRows: totalRows,
+      totalPage: totalPage,
+    });
   } catch (error) {
     console.log(error);
   }

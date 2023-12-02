@@ -5,7 +5,6 @@ import dotenv from "dotenv";
 import db from "./config/Database.js";
 import SequelizeStore from "connect-session-sequelize";
 import UserRoute from "./routes/UserRoute.js";
-import ProductRoute from "./routes/ProductRoute.js";
 import AuthRoute from "./routes/AuthRoute.js";
 import StudentRoute from "./routes/StudentRoute.js";
 import ScheduleRoute from "./routes/ScheduleRoute.js";
@@ -43,7 +42,6 @@ app.use(
 );
 app.use(express.json());
 app.use(UserRoute);
-app.use(ProductRoute);
 app.use(AuthRoute);
 app.use(StudentRoute);
 app.use(ScheduleRoute);

@@ -1,15 +1,41 @@
 import User from "../models/UserModel.js";
 import argon2 from "argon2";
+import { Op } from "sequelize";
 
 export const getUsers = async (req, res) => {
+  const page = parseInt(req.query.page) || 0;
+  const limit = parseInt(req.query.limit) || 10;
+  const search = req.query.search_query || "";
+  const offset = limit * page;
+
+  let response;
+  let totalPage;
+  let totalRows;
+
+  let whereCondition = {
+    name: {
+      [Op.like]: "%" + search + "%",
+    },
+    role: "parent",
+  };
+
   try {
-    const response = await User.findAll({
-      where: {
-        role: "parent",
-      },
+    totalRows = await User.count({ where: { [Op.or]: [whereCondition] } });
+    totalPage = Math.ceil(totalRows / limit);
+    response = await User.findAll({
+      where: { [Op.or]: [whereCondition] },
+      offset: offset,
+      limit: limit,
       attributes: ["uuid", "name", "email", "role", "id"],
     });
-    res.status(200).json(response);
+
+    res.status(200).json({
+      result: response,
+      page: page,
+      limit: limit,
+      totalRows: totalRows,
+      totalPage: totalPage,
+    });
   } catch (error) {
     res.status(500).json({ msg: error.message });
   }
