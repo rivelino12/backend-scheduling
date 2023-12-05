@@ -1,6 +1,7 @@
 import Schedule from "../models/ScheduleModel.js";
 import SubSchedule from "../models/SubSchedulelModel.js";
 import Student from "../models/StudentModel.js";
+import path from "path";
 
 export const getSchedules = async (req, res) => {
   const page = parseInt(req.query.page) || 0;
@@ -41,16 +42,14 @@ export const getSchedules = async (req, res) => {
         },
       });
     }
-    res
-      .status(200)
-      .json({
-        message: "Berhasil",
-        result: response,
-        page: page,
-        limit: limit,
-        totalRows: totalRows,
-        totalPage: totalPage,
-      });
+    res.status(200).json({
+      message: "Berhasil",
+      result: response,
+      page: page,
+      limit: limit,
+      totalRows: totalRows,
+      totalPage: totalPage,
+    });
   } catch (error) {}
 };
 
@@ -125,5 +124,83 @@ export const getScheduleById = async (req, res) => {
     res.status(500).json({
       message: "Terjadi kesalahan server",
     });
+  }
+};
+
+export const getCountByClass = async (req, res) => {
+  const { classType } = req.params;
+
+  try {
+    const total = await Schedule.count({
+      where: {
+        class: classType,
+      },
+    });
+    console.log(total);
+    res.status(200).json({ message: "Berhasil", result: total });
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+export const addImageToSubSchedule = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const subSchedule = await SubSchedule.findOne({
+      where: {
+        uuid: id,
+      },
+    });
+
+    if (!subSchedule)
+      res.status(400).json({ message: "Sub Schedule tidak ada" });
+
+    const { files } = req;
+
+    if (!files || !files.file) {
+      return res
+        .status(400)
+        .json({ message: "Tidak ada gambar yang diupload" });
+    }
+
+    const { file } = files;
+    const fileSize = file.data.length;
+    const ext = path.extname(file.name);
+
+    const fileName = file.md5 + ext;
+    const url = `${req.protocol}://${req.get("host")}/images/${fileName}`;
+    const allowedTypes = [".png", ".jpg", ".jpeg"];
+    const maxFileSize = 5000000;
+
+    if (!allowedTypes.includes(ext.toLowerCase())) {
+      return res.status(422).json({ message: "Format gambar tidak valid" });
+    }
+
+    if (fileSize > maxFileSize) {
+      return res.status(422).json({ message: "Gambar harus kurang dari 5 MB" });
+    }
+
+    file.mv(`public/images/${fileName}`, async (err) => {
+      if (err) {
+        throw new Error(err.message);
+      }
+
+      await SubSchedule.update(
+        {
+          image: fileName,
+          url,
+        },
+        {
+          where: {
+            id: subSchedule.id,
+          },
+        }
+      );
+
+      res.status(200).json({ message: "Berhasil" });
+    });
+  } catch (error) {
+    console.log(error);
   }
 };

@@ -36,6 +36,20 @@ const SubSchedule = db.define(
         notEmpty: true,
       },
     },
+    image: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      validate: {
+        notEmpty: false,
+      },
+    },
+    url: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      validate: {
+        notEmpty: false,
+      },
+    },
     startTime: {
       type: DataTypes.TIME,
       allowNull: false,
